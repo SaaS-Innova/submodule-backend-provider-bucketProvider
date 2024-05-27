@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as AWS from 'aws-sdk';
 import * as fs from 'fs';
-import { ResponseMsgService } from '../../commons';
-import { s3bucketConfig } from '../../commons/config';
+import { s3bucketConfig } from '../../../commons/config';
+import { ResponseMsgService } from '../../../commons';
 
 @Injectable()
 export class BucketProvider {
