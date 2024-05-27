@@ -7,6 +7,9 @@ import { ResponseMsgService } from '../../../commons';
 @Injectable()
 export class BucketProvider {
   private s3;
+  /**
+   * Initializes the BucketProvider with AWS S3 configuration.
+  */
   constructor(private responseMsgService: ResponseMsgService) {
     const accessKeyId = s3bucketConfig.ACCESS_KEY;
     const secretAccessKey = s3bucketConfig.SECRET_KEY;
@@ -17,6 +20,13 @@ export class BucketProvider {
       secretAccessKey,
     });
   }
+
+  /**
+   * Uploads an image to the S3 bucket.
+   * @param {string | object} file - The file to upload. It can be a base64 encoded string or a file object with a path.
+   * @param {string} fileName - The desired name of the file in the S3 bucket.
+   * @returns {Promise<Object>} The result of the upload operation containing status, imageUrl, and fileName, or false on failure.
+  */
   async uploadImage(file, fileName) {
     const reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
     const match = file.match(reg);
@@ -55,6 +65,11 @@ export class BucketProvider {
     }
   }
 
+  /**
+   * Retrieves an image from the S3 bucket.
+   * @param {string} fileName - The name of the file to retrieve.
+   * @returns {Promise<Object>} The retrieved object data from S3 or an error message on failure.
+   */
   async getImage(fileName) {
     try {
       const getParams = {
@@ -73,6 +88,11 @@ export class BucketProvider {
     }
   }
 
+  /**
+   * Deletes an image from the S3 bucket.
+   * @param {string} fileName - The name of the file to delete.
+   * @returns {Promise<boolean>} True on successful deletion, or false on failure.
+   */
   async deleteImage(fileName) {
     const deleteParams = {
       Bucket: s3bucketConfig.BUCKET_NAME,
