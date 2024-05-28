@@ -9,11 +9,11 @@ export class BucketProvider {
   private s3;
   /**
    * Initializes the BucketProvider with AWS S3 configuration.
-  */
+   */
   constructor(private responseMsgService: ResponseMsgService) {
-    const accessKeyId = s3bucketConfig.ACCESS_KEY;
-    const secretAccessKey = s3bucketConfig.SECRET_KEY;
-    const endpoint = new AWS.Endpoint(`${s3bucketConfig.ENDPOINT}`);
+    const accessKeyId = s3bucketConfig.BUCKET_ACCESS_KEY;
+    const secretAccessKey = s3bucketConfig.BUCKET_SECRET_KEY;
+    const endpoint = new AWS.Endpoint(`${s3bucketConfig.BUCKET_ENDPOINT}`);
     this.s3 = new AWS.S3({
       endpoint,
       accessKeyId,
@@ -26,7 +26,7 @@ export class BucketProvider {
    * @param {string | object} file - The file to upload. It can be a base64 encoded string or a file object with a path.
    * @param {string} fileName - The desired name of the file in the S3 bucket.
    * @returns {Promise<Object>} The result of the upload operation containing status, imageUrl, and fileName, or false on failure.
-  */
+   */
   async uploadImage(file, fileName) {
     const reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
     const match = file.match(reg);
