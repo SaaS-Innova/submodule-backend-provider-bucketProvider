@@ -27,15 +27,20 @@ export class BucketProvider {
    * @param {string} fileName - The desired name of the file in the S3 bucket.
    * @returns {Promise<Object>} The result of the upload operation containing status, imageUrl, and fileName, or false on failure.
    */
-  async uploadImage(file, fileName) {
-    const reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
-    const match = file.match(reg);
+  async uploadFile(file, fileName) {
+    const base64Reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
+    const match = file.match(base64Reg);
 
     let fileStream;
     if (!match && typeof file === 'object' && file.path) {
       fileStream = fs.createReadStream(file.path);
     } else {
-      fileStream = Buffer.from(file, 'base64');
+      let fileData = file;
+      const fileWithoutMimeType = file.match(/,(.*)$/);
+      if (fileWithoutMimeType) {
+        fileData = fileWithoutMimeType[1];
+      }
+      fileStream = Buffer.from(fileData, 'base64');
     }
 
     // Upload the image file to GleSYS Object Storage
@@ -70,7 +75,7 @@ export class BucketProvider {
    * @param {string} fileName - The name of the file to retrieve.
    * @returns {Promise<Object>} The retrieved object data from S3 or an error message on failure.
    */
-  async getImage(fileName) {
+  async getFile(fileName) {
     try {
       const getParams = {
         Bucket: s3bucketConfig.BUCKET_NAME,
@@ -93,13 +98,13 @@ export class BucketProvider {
    * @param {string} fileName - The name of the file to delete.
    * @returns {Promise<boolean>} True on successful deletion, or false on failure.
    */
-  async deleteImage(fileName) {
+  async deleteFile(fileName) {
     const deleteParams = {
       Bucket: s3bucketConfig.BUCKET_NAME,
       Key: fileName,
     };
     try {
-      const data = await this.s3.deleteObject(deleteParams).promise();
+      await this.s3.deleteObject(deleteParams).promise();
       this.responseMsgService.addSuccessMsg({
         message: 'File Deleted successfully.',
         type: 'success',
