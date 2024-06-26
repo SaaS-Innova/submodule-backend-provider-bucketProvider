@@ -86,10 +86,12 @@ export class BucketProvider {
       return data;
     } catch (e) {
       this.responseMsgService.isSuccess(false);
-      return {
-        status: false,
-        error: `Could not retrieve file from S3: ${e.message}`,
-      };
+      this.responseMsgService.addErrorMsg({
+        message: `Could not retrieve file from S3: ${e.message}`,
+        type: 'error',
+        show: true,
+      });
+      return false;
     }
   }
 
