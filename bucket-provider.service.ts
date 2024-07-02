@@ -36,7 +36,7 @@ export class BucketProvider {
     file: string | { path: string },
     fileName: string,
     contentType: string
-  ) {
+  ): Promise<object | boolean> {
     const base64Reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
     const match = typeof file === 'string' && file.match(base64Reg);
 
@@ -139,13 +139,7 @@ export class BucketProvider {
     }
   }
 
-  /**
-   * Retrieves an image from the S3 bucket.
-   * @param {string} fileName - The name of the file to retrieve.
-   * @returns {Promise<string | boolean>} The base64 encoded string of the file, or false on failure.
-   */
-
-  async getFile(fileName: string): Promise<string | boolean> {
+  async getFile(fileName: string) {
     try {
       const getParams = {
         Bucket: s3bucketConfig.BUCKET_NAME,
