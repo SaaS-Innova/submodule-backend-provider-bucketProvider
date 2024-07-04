@@ -88,14 +88,19 @@ export class BucketProvider {
    * @param {string} path - The path of file.
    * @returns {Promise<string>} The presigned URL of the file, or false on failure.
    */
-  async getPresignedUrlOfFile(path: string): Promise<string | false> {
+  async getPresignedUrlOfFile(
+    path: string,
+    expiresIn = 10
+  ): Promise<string | false> {
     try {
       const getParams = {
         Bucket: s3bucketConfig.BUCKET_NAME,
         Key: path,
       };
       const command = new GetObjectCommand(getParams);
-      const url = await getSignedUrl(this.s3, command, { expiresIn: 10 });
+      const url = await getSignedUrl(this.s3, command, {
+        expiresIn: expiresIn,
+      });
       this.responseMsgService.isSuccess(true);
       return url;
     } catch (e) {
