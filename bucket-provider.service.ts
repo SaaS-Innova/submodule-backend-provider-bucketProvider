@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { s3bucketConfig } from '../../../commons/config';
 import { ResponseMsgService } from '../../../commons';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 @Injectable()
 export class BucketProvider {
@@ -125,7 +126,7 @@ export class BucketProvider {
       Key: fileName,
     };
     try {
-      await this.s3.deleteObject(deleteParams);
+      await this.s3.send(new DeleteObjectCommand(deleteParams));
       this.responseMsgService.addSuccessMsg({
         message: 'File Deleted successfully.',
         type: 'success',
