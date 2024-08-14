@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
-import * as fs from 'fs';
-import { s3bucketConfig } from '../../../commons/config';
-import { ResponseMsgService } from '../../../commons';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Injectable } from "@nestjs/common";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
+import * as fs from "fs";
+import { s3bucketConfig, config } from "../../../commons/config";
+import { ResponseMsgService } from "../../../commons";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { FILE_UPLOAD_TYPE } from "./constant";
 
 @Injectable()
 export class BucketProvider {
@@ -14,17 +15,22 @@ export class BucketProvider {
    * Initializes the BucketProvider with AWS S3 configuration.
    */
   constructor(private responseMsgService: ResponseMsgService) {
-    const accessKeyId = s3bucketConfig.BUCKET_ACCESS_KEY;
-    const secretAccessKey = s3bucketConfig.BUCKET_SECRET_KEY;
-    const endpoint = new URL(`${s3bucketConfig.BUCKET_ENDPOINT}`);
-    this.s3 = new S3Client({
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-      endpoint: endpoint.href,
-      region: s3bucketConfig.BUCKET_REGION,
-    });
+    let accessKeyId;
+    let secretAccessKey;
+    let endpoint;
+    if (config.STORAGE_TYPE === FILE_UPLOAD_TYPE.BUCKET) {
+      accessKeyId = s3bucketConfig.BUCKET_ACCESS_KEY;
+      secretAccessKey = s3bucketConfig.BUCKET_SECRET_KEY;
+      endpoint = new URL(`${s3bucketConfig.BUCKET_ENDPOINT}`);
+      this.s3 = new S3Client({
+        credentials: {
+          accessKeyId,
+          secretAccessKey,
+        },
+        endpoint: endpoint.href,
+        region: s3bucketConfig.BUCKET_REGION,
+      });
+    }
   }
 
   /**
@@ -39,19 +45,19 @@ export class BucketProvider {
     contentType: string
   ): Promise<object | boolean> {
     const base64Reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
-    const match = typeof file === 'string' && file.match(base64Reg);
+    const match = typeof file === "string" && file.match(base64Reg);
 
     let fileStream: Buffer | fs.ReadStream;
-    if (!match && typeof file === 'object' && file.path) {
+    if (!match && typeof file === "object" && file.path) {
       fileStream = fs.createReadStream(file.path);
     } else {
       let fileData = file as string;
       const fileWithoutMimeType =
-        typeof file === 'string' ? file.match(/,(.*)$/) : null;
+        typeof file === "string" ? file.match(/,(.*)$/) : null;
       if (fileWithoutMimeType) {
         fileData = fileWithoutMimeType[1];
       }
-      fileStream = Buffer.from(fileData, 'base64');
+      fileStream = Buffer.from(fileData, "base64");
     }
 
     // Upload the image file to GleSYS Object Storage
@@ -67,8 +73,8 @@ export class BucketProvider {
         params: uploadParams,
       }).done();
       this.responseMsgService.addSuccessMsg({
-        message: 'File uploaded successfully.',
-        type: 'success',
+        message: "File uploaded successfully.",
+        type: "success",
         show: true,
       });
       this.responseMsgService.isSuccess(true);
@@ -76,7 +82,7 @@ export class BucketProvider {
     } catch (error) {
       this.responseMsgService.addErrorMsg({
         message: error.message,
-        type: 'error',
+        type: "error",
         show: true,
       });
       this.responseMsgService.isSuccess(false);
@@ -108,7 +114,7 @@ export class BucketProvider {
       this.responseMsgService.isSuccess(false);
       this.responseMsgService.addErrorMsg({
         message: `Could not retrieve file from S3: ${e.message}`,
-        type: 'error',
+        type: "error",
         show: true,
       });
       return false;
@@ -128,8 +134,8 @@ export class BucketProvider {
     try {
       await this.s3.send(new DeleteObjectCommand(deleteParams));
       this.responseMsgService.addSuccessMsg({
-        message: 'File Deleted successfully.',
-        type: 'success',
+        message: "File Deleted successfully.",
+        type: "success",
         show: true,
       });
       this.responseMsgService.isSuccess(true);
@@ -137,7 +143,7 @@ export class BucketProvider {
     } catch (error) {
       this.responseMsgService.addErrorMsg({
         message: error.message,
-        type: 'error',
+        type: "error",
         show: true,
       });
       this.responseMsgService.isSuccess(false);
@@ -153,12 +159,12 @@ export class BucketProvider {
       };
       const { Body } = await this.s3.send(new GetObjectCommand(getParams));
       this.responseMsgService.isSuccess(true);
-      return await Body.transformToString('base64');
+      return await Body.transformToString("base64");
     } catch (e) {
       this.responseMsgService.isSuccess(false);
       this.responseMsgService.addErrorMsg({
         message: `Could not retrieve file from S3: ${e.message}`,
-        type: 'error',
+        type: "error",
         show: true,
       });
       return false;
