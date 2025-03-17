@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import * as fs from "fs";
@@ -95,7 +95,7 @@ export class BucketProvider {
         show: true,
       });
       this.responseMsgService.isSuccess(false);
-      return false;
+      throw new BadRequestException("Failed to upload file");
     }
   }
 
