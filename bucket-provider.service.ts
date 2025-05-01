@@ -7,10 +7,12 @@ import { ResponseMsgService } from "../../../commons";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { FILE_UPLOAD_TYPE } from "./constant";
+import { parse } from "path";
 
 @Injectable()
 export class BucketProvider {
   private s3;
+
   /**
    * Initializes the BucketProvider with AWS S3 configuration.
    */
@@ -33,6 +35,11 @@ export class BucketProvider {
     }
   }
 
+  isMxfileXml(xml: string): boolean {
+    // strip leading whitespace, then test for "<mxfile" tag
+    return /^\s*<mxfile\b/.test(xml);
+  }
+
   /**
    * Uploads an image to the S3 bucket.
    * @param {string | { path: string }} file - The file to upload. It can be a base64 encoded string or a file object with a path.
@@ -44,7 +51,7 @@ export class BucketProvider {
     fileName: string,
     contentType: string
   ): Promise<object | boolean> {
-    const base64Reg = /^data:image\/([\w+]+);base64,([\s\S]+)/;
+    const base64Reg = /^data:.*\/([\w+]+);base64,([\s\S]+)/;
     const match = typeof file === "string" && file.match(base64Reg);
 
     let fileStream: Buffer | fs.ReadStream;
@@ -54,10 +61,20 @@ export class BucketProvider {
       let fileData = file as string;
       const fileWithoutMimeType =
         typeof file === "string" ? file.match(/,(.*)$/) : null;
-      if (fileWithoutMimeType) {
+
+      const isXmlFile = this.isMxfileXml(fileData);
+
+      if (fileWithoutMimeType && !isXmlFile) {
         fileData = fileWithoutMimeType[1];
       }
-      fileStream = Buffer.from(fileData, "base64");
+      const extensionName = parse(fileName).ext;
+
+      if (extensionName === ".xml" && isXmlFile) {
+        fileData = Buffer.from(fileData, "utf-8").toString("base64");
+        fileStream = Buffer.from(fileData, "base64");
+      } else {
+        fileStream = Buffer.from(fileData, "base64");
+      }
     }
 
     // Upload the image file to GleSYS Object Storage
@@ -73,7 +90,7 @@ export class BucketProvider {
         params: uploadParams,
       }).done();
       this.responseMsgService.addSuccessMsg({
-        message: "File uploaded successfully.",
+        message: "File uploaded in bucket successfully.",
         type: "success",
         show: true,
       });
