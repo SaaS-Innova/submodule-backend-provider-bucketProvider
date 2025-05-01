@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import * as fs from "fs";
@@ -14,7 +14,10 @@ export class BucketProvider {
   private s3;
 
   /**
-   * Initializes the BucketProvider with AWS S3 configuration.
+   * Initializes the BucketProvider with S3 configuration.
+   *
+   * Sets up an S3 client instance using credentials and endpoint details from
+   * the configuration file, making it ready for bucket operations.
    */
   constructor(private responseMsgService: ResponseMsgService) {
     let accessKeyId;
@@ -42,8 +45,14 @@ export class BucketProvider {
 
   /**
    * Uploads an image to the S3 bucket.
+   *
+   * This function processes a file, either in base64 format or as a file object,
+   * and uploads it to a specified S3 bucket. On success, it returns an object
+   * containing the file URL and name; on failure, returns false.
+   *
    * @param {string | { path: string }} file - The file to upload. It can be a base64 encoded string or a file object with a path.
    * @param {string} fileName - The desired name of the file in the S3 bucket.
+   * @param {string} contentType - MIME type of the file.
    * @returns {Promise<Object | boolean>} The result of the upload operation containing status, imageUrl, and fileName, or false on failure.
    */
   async uploadFile(
@@ -103,14 +112,19 @@ export class BucketProvider {
         show: true,
       });
       this.responseMsgService.isSuccess(false);
-      return false;
+      throw new BadRequestException("Failed to upload file");
     }
   }
 
   /**
    * Retrieves an image from the S3 bucket.
-   * @param {string} path - The path of file.
-   * @returns {Promise<string>} The presigned URL of the file, or false on failure.
+   *
+   * This function generates a presigned URL for a file in the S3 bucket,
+   * allowing temporary access for downloading. If unsuccessful, returns false.
+   *
+   * @param {string} path - The path of the file within the bucket.
+   * @param {number} [expiresIn=10] - Expiration time for the presigned URL in seconds.
+   * @returns {Promise<string | false>} The presigned URL of the file, or false on failure.
    */
   async getPresignedUrlOfFile(
     path: string,
@@ -140,6 +154,10 @@ export class BucketProvider {
 
   /**
    * Deletes an image from the S3 bucket.
+   *
+   * This function deletes a specified file from the S3 bucket and
+   * returns a boolean indicating success or failure.
+   *
    * @param {string} fileName - The name of the file to delete.
    * @returns {Promise<boolean>} True on successful deletion, or false on failure.
    */
@@ -168,6 +186,15 @@ export class BucketProvider {
     }
   }
 
+  /**
+   * Retrieves the content of a file from the S3 bucket as a base64 string.
+   *
+   * Fetches a file from the S3 bucket, converts its content to a base64 encoded string,
+   * and returns it. If retrieval fails, returns false.
+   *
+   * @param {string} fileName - The name of the file to retrieve.
+   * @returns {Promise<string | false>} The base64 encoded content of the file or false on failure.
+   */
   async getFile(fileName: string) {
     try {
       const getParams = {
